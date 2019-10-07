@@ -2,9 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>$Title$</title>
+    <title>Title</title>
 </head>
 <body>
-$END$
+    <h2>Books successfully added</h2>
+    New title: {% for book in add_book %}
+                {{ book }}
+                {% endfor %}
+    <p><a href="/list/">Back to the list of books</a></p>
 </body>
 </html>

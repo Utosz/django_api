@@ -2,9 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>$Title$</title>
+    <title>Title</title>
 </head>
 <body>
-$END$
+    <h2>Books successfully imported</h2>
+     <p><a href="/find/">Back to import site</a></p>
+    New titles:
+    {% for key, value in imported.items %}
+    <li> {{ key }}: {{ value }}</li>
+    {% endfor %}
 </body>
 </html>

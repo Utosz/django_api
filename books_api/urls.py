@@ -15,11 +15,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, re_path
-from Books_manager.views import books_list, import_book, add_book
+from Books_manager.views import BooksView, AddBooksView, ImportBookView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    re_path(r'^books/', books_list),
-    re_path(r'^add_book/', add_book),
-    re_path(r'^import_book/', import_book),
+    re_path(r'^list/', BooksView.as_view()),
+    re_path(r'^add/', AddBooksView.as_view()),
+    re_path(r'^find/', ImportBookView.as_view())
 ]
