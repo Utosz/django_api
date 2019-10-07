@@ -1,9 +1,11 @@
 from django.shortcuts import render
-from django.http import HttpResponse
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import generics
 from Books_manager.models import BookModel, AuthorsModel, IndustryIdentifiersModel, ImageLinksModel
 from Books_manager import additional_functions as addons
 from django.views import View
 from .forms import SearchBookForm, AddBookForm, AddImageLinksForm, AddIndustryIdentifiersForm, FindGoogleBook
+from .serializers import BookModelSerializer
 
 
 class BooksView(View):
@@ -23,13 +25,24 @@ class BooksView(View):
             query_dict['title__icontains'] = title
             author = forms.cleaned_data.get('authors')
             if author:
-                authors_query = AuthorsModel.objects.filter(author__icontains=author).all()
+                authors_query = AuthorsModel.objects.filter(author__icontains=author).values_list('pk', flat=True)
                 if authors_query:
-                    query_dict['authors'] = authors_query[0]
+                    authors_query = [i for i in authors_query]
+                    query_dict['authors__in'] = authors_query
+                else:
+                    author = None
             language = forms.cleaned_data.get('language')
             query_dict['language__icontains'] = language
             published_date = forms.cleaned_data.get('published_date')
-            query_dict['published_date__icontains'] = published_date
+            if published_date:
+                published_date = published_date.split(',')
+                if len(published_date) > 1:
+                    published_date = published_date[0:2]
+                    published_date.sort()
+                    query_dict['published_date__gte'] = published_date[0].strip()
+                    query_dict['published_date__lte'] = published_date[1].strip()
+                else:
+                    query_dict['published_date__icontains'] = published_date[0].strip()
             cleaned_dict = {key: query_dict[key] for key in query_dict if
                             query_dict[key] is not None and query_dict[key] != ''}
             all_books_query = BookModel.objects.filter(**cleaned_dict).all()
@@ -37,9 +50,7 @@ class BooksView(View):
                 return render(request, 'fail.html')
             all_books = {'all_books': all_books_query,
                          'forms': forms,
-                         # 'a': authors_query,
-                         'q': cleaned_dict,
-                         'au': author}
+                         }
             return render(request, 'list.html', all_books)
 
 
@@ -104,10 +115,6 @@ class AddBooksView(View):
 
 
 class ImportBookView(View):
-    """
-    stwórz widok który pozwoli na import książek według słów kluczowych z API: https://developers.google.com/books/docs/v1/using#WorkingVolumes
-wpisy tych książek muszą znaleźć się w bazie danych która została stworzona w pierwszej części tego zadania
-    """
 
     def get(self, request):
         forms = FindGoogleBook()
@@ -166,3 +173,10 @@ wpisy tych książek muszą znaleźć się w bazie danych która została stworz
                 'imported': result
             }
             return render(request, 'import.html', all_books)
+
+
+class RestApiBookView(generics.ListAPIView):
+    queryset = BookModel.objects.all()
+    serializer_class = BookModelSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['title', 'authors', 'language', 'published_date']

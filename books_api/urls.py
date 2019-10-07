@@ -15,11 +15,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, re_path
-from Books_manager.views import BooksView, AddBooksView, ImportBookView
+from Books_manager.views import BooksView, AddBooksView, ImportBookView, RestApiBookView#, RestApiBook
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     re_path(r'^list/', BooksView.as_view()),
     re_path(r'^add/', AddBooksView.as_view()),
-    re_path(r'^find/', ImportBookView.as_view())
+    re_path(r'^find/', ImportBookView.as_view()),
+    re_path(r'api/', RestApiBookView.as_view()),
 ]
