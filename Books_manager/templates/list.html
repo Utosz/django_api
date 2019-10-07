@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+</head>
+<body>
+<form action=/list/ method="post">
+    <h3>Find Book</h3>
+    {% csrf_token %}
+    {{ forms.as_p }}
+      <input type="submit" value="FIND">
+</form>
+<h4>List of books:</h4>
+<ul>
+    {% for book in all_books %}
+    <li>Title: "{{ book.title }}" Date of publication: "{{ book.published_date }}" Amount of pages: "{{ book.page_count }}" Language: "{{ book.language }}" {% for industry in book.industry.values_list %} Industry Id: "{{ industry.1 }}" Industry type: "{{ industry.2 }}" {% endfor %} {% for link in book.image.values_list %} smallThumbnail: "{{ link.3 }}" thumbnail: "{{ link.2 }}" {% endfor %}  Author: {% for author in book.authors.values_list %}  "{{ author.1}}" {% endfor %}
+    </li>
+    {% empty %}
+    <li>Sorry, no books in this list.</li>
+    {% endfor %}
+</ul>
+{{ q }}
+{{ a }}
+</body>
+</html>

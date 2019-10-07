@@ -1,0 +1,23 @@
+*.pyc
+*/__ pycache __/*
+venv_book_api
+db.sqlite3
+/static
+.DS_Store
+*.log
+local_settings.py
+db.sqlite3-journal
+.idea/**/workspace.xml 
+.idea/**/tasks.xml 
+.idea/dictionaries 
+.idea/**/dataSources/ 
+.idea/**/dataSources.ids 
+.idea/**/dataSources.xml 
+.idea/**/dataSources.local.xml 
+.idea/**/sqlDataSources.xml 
+.idea/**/dynamic.xml 
+.idea/**/uiDesigner.xml 
+.idea/**/gradle.xml 
+.idea/**/libraries 
+*.iws /out/ 
+
