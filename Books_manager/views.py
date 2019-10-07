@@ -20,19 +20,10 @@ class BooksView(View):
     def post(self, request):
         forms = SearchBookForm(request.POST)
         if forms.is_valid():
-            query_dict = {}
-            title = forms.cleaned_data.get('title')
-            query_dict['title__icontains'] = title
-            author = forms.cleaned_data.get('authors')
-            if author:
-                authors_query = AuthorsModel.objects.filter(author__icontains=author).values_list('pk', flat=True)
-                if authors_query:
-                    authors_query = [i for i in authors_query]
-                    query_dict['authors__in'] = authors_query
-                else:
-                    author = None
-            language = forms.cleaned_data.get('language')
-            query_dict['language__icontains'] = language
+            query_dict = {'title__icontains': forms.cleaned_data.get('title'),
+                          'authors__author__icontains': forms.cleaned_data.get('authors'),
+                          'language__icontains': forms.cleaned_data.get('language'),
+                          }
             published_date = forms.cleaned_data.get('published_date')
             if published_date:
                 published_date = published_date.split(',')
@@ -46,82 +37,55 @@ class BooksView(View):
             cleaned_dict = {key: query_dict[key] for key in query_dict if
                             query_dict[key] is not None and query_dict[key] != ''}
             all_books_query = BookModel.objects.filter(**cleaned_dict).all()
-            if not all_books_query or not (title or author or language or published_date):
+            if not all_books_query or not (query_dict or published_date):
                 return render(request, 'fail.html')
-            all_books = {'all_books': all_books_query,
-                         'forms': forms,
-                         }
-            return render(request, 'list.html', all_books)
+            return render(request, 'list.html', {'all_books': all_books_query, 'forms': forms})
 
 
 class AddBooksView(View):
 
     def get(self, request):
-        # all_books_query = BookModel.objects.all()
         forms_book = AddBookForm()
         forms_industry = AddIndustryIdentifiersForm()
         forms_image = AddImageLinksForm()
-        all_books = {  # 'all_books': all_books_query,
-            'forms_book': forms_book,
-            'forms_industry': forms_industry,
-            'forms_image': forms_image
-        }
-        return render(request, 'add.html', all_books)
+        return render(request, 'add.html',
+                      {'forms_book': forms_book, 'forms_industry': forms_industry, 'forms_image': forms_image})
 
     def post(self, request):
         forms_book = AddBookForm(request.POST)
         forms_industry = AddIndustryIdentifiersForm(request.POST)
         forms_image = AddImageLinksForm(request.POST)
-        if forms_book.is_valid():
-            query_dict = {}
-            industry_dict = {}
-            image_dict = {}
-            title = forms_book.cleaned_data.get('title')
-            query_dict['title'] = title
-            page_count = forms_book.cleaned_data.get('page_count')
-            query_dict['page_count'] = page_count
-            language = forms_book.cleaned_data.get('language')
-            query_dict['language'] = language
-            published_date = forms_book.cleaned_data.get('published_date')
-            query_dict['published_date'] = published_date
-            cleaned_dict = {key: query_dict[key] for key in query_dict if
-                            query_dict[key] is not None and query_dict[key] != ''}
-
-            new_book = BookModel.objects.create(**cleaned_dict)
+        if forms_book.is_valid() and forms_industry.is_valid() and forms_image.is_valid():
+            query_dict = {
+                'title': forms_book.cleaned_data.get('title'),
+                'page_count': forms_book.cleaned_data.get('page_count'),
+                'language': forms_book.cleaned_data.get('language'),
+                'published_date': forms_book.cleaned_data.get('published_date'),
+            }
+            new_book = BookModel.objects.create(**query_dict)
             author = forms_book.cleaned_data.get('authors')
             new_author = AuthorsModel.objects.get_or_create(author=author)
             new_book.authors.add(new_author[0])
-            authors_query = AuthorsModel.objects.filter(author=author).values_list('pk', flat=True)
-            if authors_query:
-                query_dict['authors'] = authors_query[0]
-        if forms_industry.is_valid():
-            industry_identifiers_type = forms_industry.cleaned_data.get('industry_identifiers_type')
-            industry_dict['industry_identifiers_type'] = industry_identifiers_type
-            industry_identifiers_id = forms_industry.cleaned_data.get('industry_identifiers_id')
-            industry_dict['industry_identifiers_id'] = industry_identifiers_id
-            new_industries = IndustryIdentifiersModel.objects.create(**industry_dict, book_id=new_book)
-        if forms_image.is_valid():
-            small_thumbnail = forms_image.cleaned_data.get('small_thumbnail')
-            image_dict['small_thumbnail'] = small_thumbnail
-            thumbnail = forms_image.cleaned_data.get('thumbnail')
-            image_dict['thumbnail'] = thumbnail
-            new_links = ImageLinksModel.objects.create(**image_dict, book_id=new_book)
-
-            all_books_query = BookModel.objects.filter(**cleaned_dict).all()
-            all_books = {
-                'add_book': all_books_query,
+            query_dict['authors__author'] = AuthorsModel.objects.filter(author=author).values_list('pk', flat=True)[0]
+            industry_dict = {
+                'industry_identifiers_type': forms_industry.cleaned_data.get('industry_identifiers_type'),
+                'industry_identifiers_id': forms_industry.cleaned_data.get('industry_identifiers_id')
             }
-            return render(request, 'success.html', all_books)
+            new_industries = IndustryIdentifiersModel.objects.create(**industry_dict, book_id=new_book)
+            image_dict = {
+                'small_thumbnail': forms_image.cleaned_data.get('small_thumbnail'),
+                'thumbnail': forms_image.cleaned_data.get('thumbnail')
+            }
+            new_links = ImageLinksModel.objects.create(**image_dict, book_id=new_book)
+            all_books_query = BookModel.objects.filter(**query_dict).all()
+            return render(request, 'success.html', {'add_book': all_books_query})
 
 
 class ImportBookView(View):
 
     def get(self, request):
         forms = FindGoogleBook()
-        all_books = {
-            'forms': forms
-        }
-        return render(request, 'find.html', all_books)
+        return render(request, 'find.html', {'forms': forms})
 
     def post(self, request):
         forms = FindGoogleBook(request.POST)
@@ -129,13 +93,13 @@ class ImportBookView(View):
         create_book = [find_keys[0], find_keys[2], find_keys[4], find_keys[6]]
 
         if forms.is_valid():
-            search = ''
-            keyword = forms.cleaned_data.get('keyword')
-            search += str(keyword)
-            areas = forms.cleaned_data.get('areas')
-            search += f'+{str(areas)}'
+            search = f"{str(forms.cleaned_data.get('keyword'))}+{str(forms.cleaned_data.get('areas'))}"
             r = addons.connect(search)
+            if not r:
+                return render(request, 'cn_problem.html')
             search_result = addons.parse_n_find(r)
+            if not search_result:
+                return render(request, 'no_results.html')
             result = addons.get_data(search_result, find_keys)
 
             # create objects in db
@@ -169,10 +133,8 @@ class ImportBookView(View):
                         new_links = ImageLinksModel.objects.create(thumbnail=value[key]['thumbnail'],
                                                                    small_thumbnail=value[key]['smallThumbnail'],
                                                                    book_id=new_book)
-            all_books = {
-                'imported': result
-            }
-            return render(request, 'import.html', all_books)
+
+            return render(request, 'import.html',{'imported': result})
 
 
 class RestApiBookView(generics.ListAPIView):
