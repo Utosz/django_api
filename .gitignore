@@ -1,6 +1,6 @@
 *.pyc
 __pycache__/
-venv_book_api
+#venv_book_api
 db.sqlite3
 /static
 .DS_Store
