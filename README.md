@@ -7,7 +7,7 @@ books_api is a recruitment task executed with Django and PostgreSQL (also perfec
 This is early version which still need a lot of testing and probably  contains a lot of bugs\
 Known issues:
 - range on REST API View still isn't implemented
-- REST API lacks of data from related models
+- REST API doesn't display all data from related models
 - forms are Unicode sensitive
 - queries uses 'contains' only
 
