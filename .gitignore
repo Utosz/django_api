@@ -19,5 +19,6 @@ db.sqlite3-journal
 .idea/**/uiDesigner.xml 
 .idea/**/gradle.xml 
 .idea/**/libraries 
-*.iws /out/ 
+*.iws /out/
+/secrets.json
 
